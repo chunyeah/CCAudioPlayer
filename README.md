@@ -1,4 +1,6 @@
 CCAudioPlayer
 =============
 
-Objective-C Audio player support remote and local files, Sitting on top of AVPlayer.
+CCAudioPlayer support remote and local audio files, Sitting on top of AVPlayer.
+And It useful basic player functionalities.
+
