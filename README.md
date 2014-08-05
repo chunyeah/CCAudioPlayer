@@ -34,9 +34,17 @@ CCAudioPlayer
     CCAudioPlayerStateStopped // Raised when an audio file has finished playing
     CCAudioPlayerStateError // Raised when an unexpected and possibly unrecoverable error has occured
     CCAudioPlayerStateDisposed // Audio player is disposed
-
+    
+    // Use KVO
     [audioPlayer addObserver:self forKeyPath:@"progress" options:NSKeyValueObservingOptionNew context:NULL];
     [audioPlayer addObserver:self forKeyPath:@"playerState" options:NSKeyValueObservingOptionNew context:NULL];
+    
+    // Or Use Block API
+    [audioPlayer trackPlayerProgress:^(NSTimeInterval progress) {
+        NSLog(@"Player progress update.");
+    } playerState:^(CCAudioPlayerState playerState) {
+        NSLog(@"Player state update.");
+    }];
 
 #### Player Control
     [audioPlayer play];
