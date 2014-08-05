@@ -51,6 +51,10 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
 
 @property (nonatomic) CCAudioPlayerErrorCode errorCode;
 
+@property (nonatomic, copy) void (^trackProgressBlock)(NSTimeInterval progress);
+
+@property (nonatomic, copy) void (^trackPlayerStateBlock)(CCAudioPlayerState playerState);
+
 @end
 
 @implementation CCAudioPlayer
@@ -164,6 +168,14 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
     self.playerState = CCAudioPlayerStateDisposed;
     
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+    if (self.trackProgressBlock) {
+        self.trackProgressBlock = nil;
+    }
+    
+    if (self.trackPlayerStateBlock) {
+        self.trackPlayerStateBlock = nil;
+    }
 }
 
 - (NSTimeInterval)duration
@@ -186,7 +198,36 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
     return (nil != _playerItem) ? (0.0 != _player.rate) : NO;
 }
 
+- (void)trackPlayerProgress:(void (^)(NSTimeInterval))progressHandler playerState:(void (^)(CCAudioPlayerState))playerStateHandler
+{
+    if (progressHandler) {
+        self.trackProgressBlock = progressHandler;
+    }
+    if (playerStateHandler) {
+        self.trackPlayerStateBlock = playerStateHandler;
+    }
+}
+
 #pragma mark - Private
+
+- (void)setPlayerState:(CCAudioPlayerState)playerState
+{
+    if (_playerState != playerState) {
+        _playerState = playerState;
+        
+        if (self.trackPlayerStateBlock) {
+            self.trackPlayerStateBlock(_playerState);
+        }
+    }
+}
+
+- (void)setProgress:(NSTimeInterval)progress
+{
+    _progress = progress;
+    if (self.trackProgressBlock) {
+        self.trackProgressBlock(_progress);
+    }
+}
 
 - (void)initializePlayer
 {
@@ -407,7 +448,6 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
         }
     } else if (object == _playerItem && [keyPath isEqualToString:@"loadedTimeRanges"]) {
         NSArray *timeRanges = (NSArray *)[change objectForKey:NSKeyValueChangeNewKey];
-        CCLog(@"%@", timeRanges);
         if (timeRanges && timeRanges.count > 0) {
             CMTimeRange timeRange = [timeRanges[0] CMTimeRangeValue];
             if (_player.rate == 0 && _pauseReason != CCAudioPlayerPauseReasonForcePause) {
@@ -455,19 +495,10 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
                          withOptions:AVAudioSessionCategoryOptionAllowBluetooth
                                error:&setCategoryError];
                 
-                if (setCategoryError) {
-                    CCLog(@"%@", setCategoryError);
-                }
-                
                 NSError *activationError = nil;
                 [audioSession setActive:YES error:&activationError];
-                if (activationError) {
-                    CCLog(@"%@", activationError);
-                }
             }
         }
-    } else {
-        CCLog(@"unable to register background playback");
     }
 }
 

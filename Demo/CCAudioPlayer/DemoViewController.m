@@ -14,6 +14,8 @@
 #import "CCAudioPlayer.h"
 #import "Track.h"
 
+#define kUseBlockAPIToTrackPlayerStatus     1
+
 @interface DemoViewController ()
 {
 @private
@@ -77,41 +79,51 @@
 
 #pragma mark - Private
 
+- (void)updateProgressView
+{
+    [_progressSlider setValue:_audioPlayer.progress / _audioPlayer.duration animated:YES];
+}
+
+- (void)updateStatusViews
+{
+    switch (_audioPlayer.playerState) {
+        case CCAudioPlayerStatePlaying:
+        {
+            _statusLabel.text = @"Playing";
+            [_buttonPlayPause setTitle:@"Pause" forState:UIControlStateNormal];
+        }
+            break;
+        case CCAudioPlayerStateBuffering:
+        {
+            _statusLabel.text = @"Buffering";
+        }
+            break;
+            
+        case CCAudioPlayerStatePaused:
+        {
+            _statusLabel.text = @"Paused";
+            [_buttonPlayPause setTitle:@"Play" forState:UIControlStateNormal];
+        }
+            break;
+            
+        case CCAudioPlayerStateStopped:
+        {
+            _statusLabel.text = @"Play to End";
+            
+            [self _actionNext:nil];
+        }
+            break;
+        default:
+            break;
+    }
+}
+
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
     if ([keyPath isEqualToString:@"progress"]) {
-        [_progressSlider setValue:_audioPlayer.progress / _audioPlayer.duration animated:YES];
+        [self updateProgressView];
     } else {
-        switch (_audioPlayer.playerState) {
-            case CCAudioPlayerStatePlaying:
-            {
-                _statusLabel.text = @"Playing";
-                [_buttonPlayPause setTitle:@"Pause" forState:UIControlStateNormal];
-            }
-                break;
-            case CCAudioPlayerStateBuffering:
-            {
-                _statusLabel.text = @"Buffering";
-            }
-                break;
-                
-            case CCAudioPlayerStatePaused:
-            {
-                _statusLabel.text = @"Paused";
-                [_buttonPlayPause setTitle:@"Play" forState:UIControlStateNormal];
-            }
-                break;
-        
-            case CCAudioPlayerStateStopped:
-            {
-                _statusLabel.text = @"Play to End";
-                
-                [self _actionNext:nil];
-            }
-                break;
-            default:
-                break;
-        }
+        [self updateStatusViews];
     }
 }
 
@@ -144,8 +156,10 @@
 {
     if (_audioPlayer) {
         [_audioPlayer dispose];
-        [_audioPlayer removeObserver:self forKeyPath:@"progress"];
-        [_audioPlayer removeObserver:self forKeyPath:@"playerState"];
+        if (!kUseBlockAPIToTrackPlayerStatus) {
+            [_audioPlayer removeObserver:self forKeyPath:@"progress"];
+            [_audioPlayer removeObserver:self forKeyPath:@"playerState"];
+        }
         _audioPlayer = nil;
     }
     
@@ -157,8 +171,19 @@
         [_titleLabel setText:title];
         
         _audioPlayer = [CCAudioPlayer audioPlayerWithContentsOfURL:track.audioFileURL];
-        [_audioPlayer addObserver:self forKeyPath:@"progress" options:NSKeyValueObservingOptionNew context:NULL];
-        [_audioPlayer addObserver:self forKeyPath:@"playerState" options:NSKeyValueObservingOptionNew context:NULL];
+        if (kUseBlockAPIToTrackPlayerStatus) {
+            typeof(self) __weak weakSelf = self;
+            [_audioPlayer trackPlayerProgress:^(NSTimeInterval progress) {
+                DemoViewController *strongSelf = weakSelf;
+                [strongSelf updateProgressView];
+            } playerState:^(CCAudioPlayerState playerState) {
+                DemoViewController *strongSelf = weakSelf;
+                [strongSelf updateStatusViews];
+            }];
+        } else {
+            [_audioPlayer addObserver:self forKeyPath:@"progress" options:NSKeyValueObservingOptionNew context:NULL];
+            [_audioPlayer addObserver:self forKeyPath:@"playerState" options:NSKeyValueObservingOptionNew context:NULL];
+        }
         [_audioPlayer play];
     } else {
         NSLog(@"No tracks available");

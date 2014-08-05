@@ -51,6 +51,9 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerErrorCode) {
 
 @property (nonatomic, readonly) BOOL isPlaying; // Gets the current player is playing or not
 
+// Track Player Status Block, update progress and player state
+- (void)trackPlayerProgress:(void (^)(NSTimeInterval progress))progressHandler playerState:(void(^)(CCAudioPlayerState playerState))playerStateHandler;
+
 - (void)play;
 
 - (void)pause;
