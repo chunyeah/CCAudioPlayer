@@ -256,8 +256,10 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
     typeof(self) __weak weakSelf = self;
     _backgroundTaskId = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
         CCAudioPlayer *strongSelf = weakSelf;
-        [[UIApplication sharedApplication] endBackgroundTask:strongSelf->_removedTaskId];
-        strongSelf->_backgroundTaskId = UIBackgroundTaskInvalid;
+        if (strongSelf) {
+            [[UIApplication sharedApplication] endBackgroundTask:strongSelf->_removedTaskId];
+            strongSelf->_backgroundTaskId = UIBackgroundTaskInvalid;
+        }
     }];
     
     if (_backgroundTaskId != UIBackgroundTaskInvalid && _removedTaskId == 0 ? YES : (_removedTaskId != UIBackgroundTaskInvalid)) {
