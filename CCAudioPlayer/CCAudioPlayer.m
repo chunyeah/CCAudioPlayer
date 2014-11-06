@@ -100,9 +100,9 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
         
         [_player play];
         
-        if (self.playerState == CCAudioPlayerStateRunning || self.playerState == CCAudioPlayerStateNone) {
+        if (self.playerState == CCAudioPlayerStateRunning) {
             self.playerState = CCAudioPlayerStateBuffering;
-        } else if (self.playerState != CCAudioPlayerStateBuffering) {
+        } else if (self.playerState == CCAudioPlayerStatePaused) {
             self.playerState = CCAudioPlayerStatePlaying;
         }
         
@@ -118,7 +118,9 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
         
         [_player pause];
         
-        self.playerState = CCAudioPlayerStatePaused;
+        if (self.playerState == CCAudioPlayerStatePlaying) {
+            self.playerState = CCAudioPlayerStatePaused;
+        }
         
         _pauseReason = CCAudioPlayerPauseReasonUserPause;
     }
@@ -428,15 +430,14 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
             }
             
             if (playerItemStatus == AVPlayerItemStatusReadyToPlay) {
-                self.playerState = CCAudioPlayerStateRunning;
-                
                 [self clearTimeObserver];
-                
                 typeof(self) __weak weakSelf = self;
                 _timeObserver = [_player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(1.0, 1) queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
                     CCAudioPlayer *strongSelf = weakSelf;
-                    if (!strongSelf->_seeking) {
-                        strongSelf.progress = CMTimeGetSeconds(time);
+                    if (strongSelf) {
+                        if (!strongSelf->_seeking) {
+                            strongSelf.progress = CMTimeGetSeconds(time);
+                        }
                     }
                 }];
                 
