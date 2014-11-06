@@ -214,12 +214,10 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
 
 - (void)setPlayerState:(CCAudioPlayerState)playerState
 {
-    if (_playerState != playerState) {
-        _playerState = playerState;
-        
-        if (self.trackPlayerStateBlock) {
-            self.trackPlayerStateBlock(_playerState);
-        }
+    _playerState = playerState;
+    
+    if (self.trackPlayerStateBlock) {
+        self.trackPlayerStateBlock(_playerState);
     }
 }
 
@@ -405,7 +403,11 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
         NSNumber *changeKind = change[NSKeyValueChangeKindKey];
         if ([@(NSKeyValueChangeSetting) isEqual:changeKind]) {
             if (_player.status == AVPlayerStatusReadyToPlay) {
-                self.playerState = CCAudioPlayerStateRunning;
+                if (_playerItem) {
+                    self.playerState = CCAudioPlayerStateBuffering;
+                } else {
+                    self.playerState = CCAudioPlayerStateRunning;
+                }
             } else {
                 self.playerState = CCAudioPlayerStateError;
                 self.errorCode = CCAudioPlayerErrorPlayerInitializeFailed;
