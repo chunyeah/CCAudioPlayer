@@ -372,7 +372,7 @@ typedef NS_ENUM(NSInteger, CCAudioPlayerPauseReason) {
         _interruptedWhilePlaying = YES;
         [self pause];
         _pauseReason = CCAudioPlayerPauseReasonForcePause;
-    } else if (interuptionType == AVAudioSessionInterruptionTypeEnded && _interruptedWhilePlaying && _pauseReason != CCAudioPlayerPauseReasonForcePause && _pauseReason != CCAudioPlayerPauseReasonUserPause) {
+    } else if (interuptionType == AVAudioSessionInterruptionTypeEnded && _interruptedWhilePlaying && _pauseReason != CCAudioPlayerPauseReasonUserPause) {
         [self setupPlayBackAudioSession];
         _interruptedWhilePlaying = NO;
         [self play];
